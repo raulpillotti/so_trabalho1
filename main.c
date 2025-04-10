@@ -27,7 +27,61 @@ int check_date(char *date) {
     return year > 2024 || year == 2024 && month >= 3;
 }
 
+//função da thread
 void process_record_chunk(Record *records, int count) {
+    if (count == 0) return;
+
+    float temp_min = records[0].temperature;
+    float temp_max = records[0].temperature;
+    float temp_sum = 0.0;
+
+    float hum_min = records[0].humidity;
+    float hum_max = records[0].humidity;
+    float hum_sum = 0.0;
+
+    float luz_min = records[0].luminosity;
+    float luz_max = records[0].luminosity;
+    float luz_sum = 0.0;
+
+    float ruido_min = records[0].noise;
+    float ruido_max = records[0].noise;
+    float ruido_sum = 0.0;
+
+    float eco2_min = records[0].eco2;
+    float eco2_max = records[0].eco2;
+    float eco2_sum = 0.0;
+
+    float etvoc_min = records[0].etvoc;
+    float etvoc_max = records[0].etvoc;
+    float etvoc_sum = 0.0;
+
+    for (int i = 0; i < count; i++) {
+        Record r = records[i];
+
+        temp_sum += r.temperature;
+        if (r.temperature < temp_min) temp_min = r.temperature;
+        if (r.temperature > temp_max) temp_max = r.temperature;
+
+        hum_sum += r.humidity;
+        if (r.humidity < hum_min) hum_min = r.humidity;
+        if (r.humidity > hum_max) hum_max = r.humidity;
+
+        luz_sum += r.luminosity;
+        if (r.luminosity < luz_min) luz_min = r.luminosity;
+        if (r.luminosity > luz_max) luz_max = r.luminosity;
+
+        ruido_sum += r.noise;
+        if (r.noise < ruido_min) ruido_min = r.noise;
+        if (r.noise > ruido_max) ruido_max = r.noise;
+
+        eco2_sum += r.eco2;
+        if (r.eco2 < eco2_min) eco2_min = r.eco2;
+        if (r.eco2 > eco2_max) eco2_max = r.eco2;
+
+        etvoc_sum += r.etvoc;
+        if (r.etvoc < etvoc_min) etvoc_min = r.etvoc;
+        if (r.etvoc > etvoc_max) etvoc_max = r.etvoc;
+    }
 }
 
 int main() {
@@ -148,6 +202,13 @@ int main() {
     for (int i = 0; i < 50; i ++) {
         printf("count %d", chunk_counts[i]);
     }
+
+    for (int i = 0; i <= 20; i++) {
+        printf("%s %s %f", records_by_date[0][i].device, records_by_date[0][i].date, records_by_date[0][i].temperature);
+        printf("\n");
+    }
+
+    process_record_chunk(records_by_date[0], chunk_counts[0]);
     printf("fim");
     return 0;
 }
