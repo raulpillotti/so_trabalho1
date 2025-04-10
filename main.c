@@ -6,6 +6,11 @@ typedef struct {
     char device[50];        
     char date[10];          
     float temperature;      
+    float humidity;
+    float luminosity;
+    float noise;
+    float eco2;
+    float etvoc;
 } Record;
 
 #define INITIAL_DATE "2024-03";
@@ -65,10 +70,44 @@ int main() {
         if (!tk) continue;
         r.temperature = atof(tk);
 
+        tk = strtok(NULL, separator);
+        if (!tk) continue;
+        r.humidity = atof(tk);
+
+        tk = strtok(NULL, separator);
+        if (!tk) continue;
+        r.luminosity = atof(tk);
+
+        tk = strtok(NULL, separator);
+        if (!tk) continue;
+        r.noise = atof(tk);
+
+        tk = strtok(NULL, separator);
+        if (!tk) continue;
+        r.eco2 = atof(tk);
+
+
+        tk = strtok(NULL, separator);
+        if (!tk) continue;
+        r.etvoc = atof(tk);
+
         records[total_count++] = r;
     }
 
     fclose(fp);
+
+    for (int i = 0; i < total_count && i < 5; i++) {
+        printf("Registro %d:\n", i + 1);
+        printf("  Device      : %s\n", records[i].device);
+        printf("  Data        : %s\n", records[i].date);
+        printf("  Temperatura : %.2f\n", records[i].temperature);
+        printf("  Umidade     : %.2f\n", records[i].humidity);
+        printf("  Luminosidade: %.2f\n", records[i].luminosity);
+        printf("  Ruído       : %.2f\n", records[i].noise);
+        printf("  eCO2        : %.2f\n", records[i].eco2);
+        printf("  eTVOC       : %.2f\n", records[i].etvoc);
+        printf("\n");
+    }
 
     // for (int i = 0; i <= 50000; i++) {
     //     printf("Device: %s | Data: %s | Temp: %.2f\n",
