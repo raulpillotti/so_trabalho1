@@ -240,8 +240,8 @@ int main() {
     int chunk_count = chunk_index;
 
     // int num_threads = 50;
-    // int num_threads = sysconf(_SC_NPROCESSORS_ONLN);
-    int num_threads = chunk_count;
+    int num_threads = sysconf(_SC_NPROCESSORS_ONLN);
+    // int num_threads = chunk_count;
     pthread_t threads[num_threads];
 
     // for (int i = 0; i < 50; i ++) {
@@ -257,7 +257,22 @@ int main() {
     fprintf(out, "device;data;sensor;valor_maximo;valor_medio;valor_minimo\n");
     fclose(out);
 
-    for (int i = 0; i < chunk_count; i++) {
+    for (int i = 0; i < num_threads; i++) {
+        ThreadData *data = malloc(sizeof(ThreadData));
+        data->records = records_by_date[i];
+        data->count = chunk_counts[i];
+
+        if (pthread_create(&threads[i], NULL, thread_function, data) != 0) {
+            perror("Erro ao criar thread");
+            return 1;
+        }
+    }
+
+    for (int i = 0; i < num_threads; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    for (int i = num_threads; i < chunk_count; i++) {
       ThreadData *data = malloc(sizeof(ThreadData));
       data->records = records_by_date[i];
       data->count = chunk_counts[i];
@@ -268,8 +283,8 @@ int main() {
       }
     }
 
-    for (int i = 0; i < chunk_count; i++) {
-      pthread_join(threads[i], NULL);
+    for (int i = num_threads; i < chunk_count; i++) {
+        pthread_join(threads[i], NULL);
     }
 
     // process_record_chunk(records_by_date[0], chunk_counts[0]);
