@@ -36,9 +36,17 @@ int check_date(char *date) {
     return year > 2024 || year == 2024 && month >= 3;
 }
 
+int sort_by_device(const void *a, const void *b) {
+    const Record *ra = (Record*)a;
+    const Record *rb = (Record*)b;
+    return strcmp(ra->device, rb->device);
+}
+
 //função da thread
 void process_record_chunk(Record *records, int count) {
     if (count == 0) return;
+
+    qsort(records, count, sizeof(Record), sort_by_device);
 
     char current_device[50];
     strncpy(current_device, records[0].device, 50); 
