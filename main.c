@@ -40,6 +40,10 @@ int check_date(char *date) {
 void process_record_chunk(Record *records, int count) {
     if (count == 0) return;
 
+    char current_device[50];
+    strncpy(current_device, records[0].device, 50); 
+    current_device[49] = '\0'; 
+
     float temp_min = records[0].temperature;
     float temp_max = records[0].temperature;
     float temp_sum = 0.0;
@@ -64,57 +68,81 @@ void process_record_chunk(Record *records, int count) {
     float etvoc_max = records[0].etvoc;
     float etvoc_sum = 0.0;
 
-    for (int i = 0; i < count; i++) {
+    for (int i = 1; i < count; i ++) {
         Record r = records[i];
+        if (strcmp(current_device, r.device) != 0) {
+            float temp_media = temp_sum / count;
+            float hum_media = hum_sum / count;
+            float luz_media = luz_sum / count;
+            float ruido_media = ruido_sum / count;
+            float eco2_media = eco2_sum / count;
+            float etvoc_media = etvoc_sum / count;
 
-        temp_sum += r.temperature;
-        if (r.temperature < temp_min) temp_min = r.temperature;
-        if (r.temperature > temp_max) temp_max = r.temperature;
+            pthread_mutex_lock(&write_mutex);
 
-        hum_sum += r.humidity;
-        if (r.humidity < hum_min) hum_min = r.humidity;
-        if (r.humidity > hum_max) hum_max = r.humidity;
+            FILE* out = fopen("saida.csv", "a");
+            if (out) {
+                fprintf(out, "%s;%s;%s;%.2f;%.2f;%.2f\n", r.device, r.date, "Temperatura", temp_max, temp_media, temp_min);
+                fprintf(out, "%s;%s;%s;%.2f;%.2f;%.2f\n", r.device, r.date, "Umidade", hum_max, hum_media, hum_min);
+                fprintf(out, "%s;%s;%s;%.2f;%.2f;%.2f\n", r.device, r.date, "Luminosidade", luz_max, luz_media, luz_min);
+                fprintf(out, "%s;%s;%s;%.2f;%.2f;%.2f\n", r.device, r.date, "Ruído", ruido_max, ruido_media, ruido_min);
+                fprintf(out, "%s;%s;%s;%.2f;%.2f;%.2f\n", r.device, r.date, "eCO2", eco2_max, eco2_media, eco2_min);
+                fprintf(out, "%s;%s;%s;%.2f;%.2f;%.2f\n", r.device, r.date, "eTVOC", etvoc_max, etvoc_media, etvoc_min);
+                fclose(out);
+            } else {
+                perror("Erro ao abrir arquivo de saída");
+            }
 
-        luz_sum += r.luminosity;
-        if (r.luminosity < luz_min) luz_min = r.luminosity;
-        if (r.luminosity > luz_max) luz_max = r.luminosity;
+            pthread_mutex_unlock(&write_mutex);
 
-        ruido_sum += r.noise;
-        if (r.noise < ruido_min) ruido_min = r.noise;
-        if (r.noise > ruido_max) ruido_max = r.noise;
+            strncpy(current_device, r.device, 50);
+            current_device[49] = '\0'; 
+            float temp_min = r.temperature;
+            float temp_max = r.temperature;
+            float temp_sum = 0.0;
 
-        eco2_sum += r.eco2;
-        if (r.eco2 < eco2_min) eco2_min = r.eco2;
-        if (r.eco2 > eco2_max) eco2_max = r.eco2;
+            float hum_min = r.humidity;
+            float hum_max = r.humidity;
+            float hum_sum = 0.0;
 
-        etvoc_sum += r.etvoc;
-        if (r.etvoc < etvoc_min) etvoc_min = r.etvoc;
-        if (r.etvoc > etvoc_max) etvoc_max = r.etvoc;
+            float luz_min = r.luminosity;
+            float luz_max = r.luminosity;
+            float luz_sum = 0.0;
+
+            float ruido_min = r.noise;
+            float ruido_max = r.noise;
+            float ruido_sum = 0.0;
+
+            float eco2_min = r.eco2;
+            float eco2_max = r.eco2;
+            float eco2_sum = 0.0;
+
+        } else {
+            temp_sum += r.temperature;
+            if (r.temperature < temp_min) temp_min = r.temperature;
+            if (r.temperature > temp_max) temp_max = r.temperature;
+
+            hum_sum += r.humidity;
+            if (r.humidity < hum_min) hum_min = r.humidity;
+            if (r.humidity > hum_max) hum_max = r.humidity;
+
+            luz_sum += r.luminosity;
+            if (r.luminosity < luz_min) luz_min = r.luminosity;
+            if (r.luminosity > luz_max) luz_max = r.luminosity;
+
+            ruido_sum += r.noise;
+            if (r.noise < ruido_min) ruido_min = r.noise;
+            if (r.noise > ruido_max) ruido_max = r.noise;
+
+            eco2_sum += r.eco2;
+            if (r.eco2 < eco2_min) eco2_min = r.eco2;
+            if (r.eco2 > eco2_max) eco2_max = r.eco2;
+
+            etvoc_sum += r.etvoc;
+            if (r.etvoc < etvoc_min) etvoc_min = r.etvoc;
+            if (r.etvoc > etvoc_max) etvoc_max = r.etvoc;
+        }
     }
-
-    float temp_media = temp_sum / count;
-    float hum_media = hum_sum / count;
-    float luz_media = luz_sum / count;
-    float ruido_media = ruido_sum / count;
-    float eco2_media = eco2_sum / count;
-    float etvoc_media = etvoc_sum / count;
-
-    pthread_mutex_lock(&write_mutex);
-
-    FILE* out = fopen("saida.csv", "a");
-    if (out) {
-        fprintf(out, "%s;%s;%s;%.2f;%.2f;%.2f\n", records[0].device, records[0].date, "Temperatura", temp_max, temp_media, temp_min);
-        fprintf(out, "%s;%s;%s;%.2f;%.2f;%.2f\n", records[0].device, records[0].date, "Umidade", hum_max, hum_media, hum_min);
-        fprintf(out, "%s;%s;%s;%.2f;%.2f;%.2f\n", records[0].device, records[0].date, "Luminosidade", luz_max, luz_media, luz_min);
-        fprintf(out, "%s;%s;%s;%.2f;%.2f;%.2f\n", records[0].device, records[0].date, "Ruído", ruido_max, ruido_media, ruido_min);
-        fprintf(out, "%s;%s;%s;%.2f;%.2f;%.2f\n", records[0].device, records[0].date, "eCO2", eco2_max, eco2_media, eco2_min);
-        fprintf(out, "%s;%s;%s;%.2f;%.2f;%.2f\n", records[0].device, records[0].date, "eTVOC", etvoc_max, etvoc_media, etvoc_min);
-        fclose(out);
-    } else {
-        perror("Erro ao abrir arquivo de saída");
-    }
-
-    pthread_mutex_unlock(&write_mutex);
 }
 
 void* thread_function(void* arg) {
@@ -239,32 +267,27 @@ int main() {
     }
     int chunk_count = chunk_index;
 
-    int max_threads = sysconf(_SC_NPROCESSORS_ONLN);
-    pthread_t threads[chunk_count];
+    // int num_threads = sysconf(_SC_NPROCESSORS_ONLN);
+    int num_threads = chunk_count;
+    pthread_t threads[num_threads];
 
     FILE* out = fopen("saida.csv", "w");
     fprintf(out, "device;data;sensor;valor_maximo;valor_medio;valor_minimo\n");
     fclose(out);
 
-    int cur_chunk = 0;
-    int limit = cur_chunk + max_threads;
+    for (int i = 0; i < chunk_count; i++) {
+      ThreadData *data = malloc(sizeof(ThreadData));
+      data->records = records_by_date[i];
+      data->count = chunk_counts[i];
 
-    while (cur_chunk < chunk_count) {
-        for (int i = cur_chunk; i < limit; i++) {
-            ThreadData *data = malloc(sizeof(ThreadData));
-            data->records = records_by_date[i];
-            data->count = chunk_counts[i];
+      if (pthread_create(&threads[i], NULL, thread_function, data) != 0) {
+          perror("Erro ao criar thread");
+          return 1;
+      }
+    }
 
-            if (pthread_create(&threads[i], NULL, thread_function, data) != 0) {
-                perror("Erro ao criar thread");
-                return 1;
-            }
-        }
-
-        for (int i = cur_chunk; i < limit; i++) {
-            pthread_join(threads[i], NULL);
-            cur_chunk ++;
-        }
+    for (int i = 0; i < chunk_count; i++) {
+      pthread_join(threads[i], NULL);
     }
 
     // process_record_chunk(records_by_date[0], chunk_counts[0]);
