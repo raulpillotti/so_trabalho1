@@ -239,26 +239,15 @@ int main() {
     }
     int chunk_count = chunk_index;
 
-    // int num_threads = 50;
-    int num_threads = sysconf(_SC_NPROCESSORS_ONLN);
-    // int num_threads = chunk_count;
-    pthread_t threads[num_threads];
-
-    // for (int i = 0; i < 50; i ++) {
-    //     printf("count %d", chunk_counts[i]);
-    // }
-
-    // for (int i = 0; i <= 20; i++) {
-    //     printf("%s %s %f", records_by_date[0][i].device, records_by_date[0][i].date, records_by_date[0][i].temperature);
-    //     printf("\n");
-    // }
+    int max_threads = sysconf(_SC_NPROCESSORS_ONLN);
+    pthread_t threads[chunk_count];
 
     FILE* out = fopen("saida.csv", "w");
     fprintf(out, "device;data;sensor;valor_maximo;valor_medio;valor_minimo\n");
     fclose(out);
 
     int cur_chunk = 0;
-    int limit = cur_chunk + num_threads;
+    int limit = cur_chunk + max_threads;
 
     while (cur_chunk < chunk_count) {
         for (int i = cur_chunk; i < limit; i++) {
@@ -272,7 +261,7 @@ int main() {
             }
         }
 
-        for (int i = 0; i < limit; i++) {
+        for (int i = cur_chunk; i < limit; i++) {
             pthread_join(threads[i], NULL);
             cur_chunk ++;
         }
