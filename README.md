@@ -26,8 +26,9 @@ Execute o programa com:
 ## Formato do CSV de Entrada
 O `devices.csv` deve conter dados no seguinte formato, com "|" como separador:
 
-id|device|contagem|data|temperatura|umidade|luminosidade|ruido|eco2|etvoc|latitude|longitude
-1048500|sirrosteste_UCS_AMV-17|28333|2023-04-20 06:36:49.142874|13.1|61.3|1.7|55.9|0|400|-29.161463|-51.152504
+`id|device|contagem|data|temperatura|umidade|luminosidade|ruido|eco2|etvoc|latitude|longitude`
+
+`1048500|sirrosteste_UCS_AMV-17|28333|2023-04-20 06:36:49.142874|13.1|61.3|1.7|55.9|0|400|-29.161463|-51.152504`
 
 A primeira linha é o cabeçalho e será ignorada.
 
@@ -67,9 +68,11 @@ As threads escrevem os resultados no arquivo `saida.csv`, sincronizadas com mute
 
 Formato da saída:
 
-device;data;sensor;valor_maximo;valor_medio;valor_minimo
-sirrosteste_UCS_AMV-16;2024-02;Temperatura;42.20;25.15;15.80
-sirrosteste_UCS_AMV-16;2024-03;Umidade;58.00;55.00;51.00
+`device;data;sensor;valor_maximo;valor_medio;valor_minimo`
+
+`sirrosteste_UCS_AMV-16;2024-02;Temperatura;42.20;25.15;15.80`
+
+`sirrosteste_UCS_AMV-16;2024-03;Umidade;58.00;55.00;51.00`
 
 ## Tipo de Threads
 
