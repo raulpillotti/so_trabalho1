@@ -70,7 +70,7 @@ Formato da saída:
 
 `device;data;sensor;valor_maximo;valor_medio;valor_minimo`
 
-`sirrosteste_UCS_AMV-16;2024-02;Temperatura;42.20;25.15;15.80`
+`sirrosteste_UCS_AMV-16;2024-03;Temperatura;42.20;25.15;15.80`
 
 `sirrosteste_UCS_AMV-16;2024-03;Umidade;58.00;55.00;51.00`
 
@@ -87,4 +87,3 @@ As threads são criadas com `pthread_create`, portanto são threads em modo usu�
   - Distribuição baseada em dispositivo (além da data).
   - Análise paralela por sensor.
   - Uso de `thread pools` para controle mais eficiente.
-  - Inclusão de logging detalhado.

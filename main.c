@@ -4,11 +4,13 @@
 #include <pthread.h>
 #include <unistd.h>
 
+// Mutex para garantir escrita segura no arquivo por múltiplas threads
 pthread_mutex_t write_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+// Estrutura que representa um registro de sensores
 typedef struct {
-    char device[50];        
-    char date[10];          
+    char device[50];        // Nome do dispositivo
+    char date[10];          // Data da leitura (yyyy-mm)         
     float temperature;      
     float humidity;
     float luminosity;
@@ -17,9 +19,10 @@ typedef struct {
     float etvoc;
 } Record;
 
+// Dados que serão passados para cada thread
 typedef struct {
-    Record *records;
-    int count;
+    Record *records;  // Ponteiro para os registros do chunk
+    int count;        // Quantidade de registros
 } ThreadData;
 
 #define INITIAL_DATE "2024-03";
@@ -28,6 +31,7 @@ typedef struct {
 
 const int DATE_LEN = 8;
 
+// Verifica se a data é igual ou posterior a março de 2024
 int check_date(char *date) {
     int year, month;
     if (sscanf(date, "%d-%d", &year, &month) != 2) {
@@ -36,6 +40,7 @@ int check_date(char *date) {
     return year > 2024 || year == 2024 && month >= 3;
 }
 
+// Função usada para ordenar os registros por nome do dispositivo
 int sort_by_device(const void *a, const void *b) {
     const Record *ra = (Record*)a;
     const Record *rb = (Record*)b;
@@ -46,12 +51,15 @@ int sort_by_device(const void *a, const void *b) {
 void process_record_chunk(Record *records, int count) {
     if (count == 0) return;
 
+    // Ordena por nome do dispositivo
     qsort(records, count, sizeof(Record), sort_by_device);
 
+    // Inicializa com o primeiro registro
     char current_device[50];
     strncpy(current_device, records[0].device, 50); 
     current_device[49] = '\0'; 
 
+    // Inicializa variáveis para o cálculo estatístico
     float temp_min = records[0].temperature;
     float temp_max = records[0].temperature;
     float temp_sum = 0.0;
@@ -76,9 +84,14 @@ void process_record_chunk(Record *records, int count) {
     float etvoc_max = records[0].etvoc;
     float etvoc_sum = 0.0;
 
+    // Percorre registros, agrupando por dispositivo
     for (int i = 1; i < count; i ++) {
         Record r = records[i];
+
+        // Novo dispositivo detectado
         if (strcmp(current_device, r.device) != 0) {
+
+            // Calcula médias para o dispositivo anterior
             float temp_media = temp_sum / count;
             float hum_media = hum_sum / count;
             float luz_media = luz_sum / count;
@@ -86,6 +99,7 @@ void process_record_chunk(Record *records, int count) {
             float eco2_media = eco2_sum / count;
             float etvoc_media = etvoc_sum / count;
 
+            // Escreve resultados no arquivo (com mutex para evitar concorrência)
             pthread_mutex_lock(&write_mutex);
 
             FILE* out = fopen("saida.csv", "a");
@@ -105,25 +119,26 @@ void process_record_chunk(Record *records, int count) {
 
             strncpy(current_device, r.device, 50);
             current_device[49] = '\0'; 
-            float temp_min = r.temperature;
-            float temp_max = r.temperature;
-            float temp_sum = 0.0;
 
-            float hum_min = r.humidity;
-            float hum_max = r.humidity;
-            float hum_sum = 0.0;
+            temp_min = r.temperature;
+            temp_max = r.temperature;
+            temp_sum = 0.0;
 
-            float luz_min = r.luminosity;
-            float luz_max = r.luminosity;
-            float luz_sum = 0.0;
+            hum_min = r.humidity;
+            hum_max = r.humidity;
+            hum_sum = 0.0;
 
-            float ruido_min = r.noise;
-            float ruido_max = r.noise;
-            float ruido_sum = 0.0;
+            luz_min = r.luminosity;
+            luz_max = r.luminosity;
+            luz_sum = 0.0;
 
-            float eco2_min = r.eco2;
-            float eco2_max = r.eco2;
-            float eco2_sum = 0.0;
+            ruido_min = r.noise;
+            ruido_max = r.noise;
+            ruido_sum = 0.0;
+
+            eco2_min = r.eco2;
+            eco2_max = r.eco2;
+            eco2_sum = 0.0;
 
         } else {
             temp_sum += r.temperature;
@@ -153,6 +168,7 @@ void process_record_chunk(Record *records, int count) {
     }
 }
 
+// Função executada por cada thread
 void* thread_function(void* arg) {
     ThreadData* data = (ThreadData*) arg;
     process_record_chunk(data->records, data->count);
@@ -163,12 +179,14 @@ void* thread_function(void* arg) {
 int main() {
     const char* path = FILE_PATH;
     FILE* fp = fopen(path, "r");
+
+    // Leitura dos registros do arquivo
     int total_count = 0;
     int capacity = 1000;
     Record *records = malloc(capacity * sizeof(Record));
 
     char buffer[1024];
-    fgets(buffer, sizeof(buffer), fp);
+    fgets(buffer, sizeof(buffer), fp); // Pula cabeçalho
     const char* separator = SEPARATOR;
 
     while (fgets(buffer, sizeof(buffer), fp)) {
@@ -244,6 +262,7 @@ int main() {
     //     records[i].device, records[i].date, records[i].temperature);
     // }
 
+    // Agrupa registros por data
     Record *records_by_date[50];
     int chunk_index = 0;
     int chunk_counts[50];
@@ -275,10 +294,12 @@ int main() {
     }
     int chunk_count = chunk_index;
 
+    // Número de threads baseado na quantidade de núcleos da CPU
     int MAX_THREADS = sysconf(_SC_NPROCESSORS_ONLN);
     int num_threads = chunk_count;
     pthread_t threads[num_threads];
 
+    // Cria o arquivo de saída com cabeçalho
     FILE* out = fopen("saida.csv", "w");
     fprintf(out, "device;data;sensor;valor_maximo;valor_medio;valor_minimo\n");
     fclose(out);
@@ -303,6 +324,6 @@ int main() {
         cur_chunk += MAX_THREADS;
     }
 
-    printf("fim");
+    printf("fim \n");
     return 0;
 }
