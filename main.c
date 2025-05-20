@@ -142,6 +142,10 @@ void process_record_chunk(Record *records, int count) {
             eco2_max = r.eco2;
             eco2_sum = 0.0;
 
+            etvoc_min = r.etvoc;
+            etvoc_max = r.etvoc;
+            etvoc_sum = 0.0;
+
             record_count_by_device = 0;
 
         } else {
