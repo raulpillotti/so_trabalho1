@@ -84,20 +84,22 @@ void process_record_chunk(Record *records, int count) {
     float etvoc_max = records[0].etvoc;
     float etvoc_sum = 0.0;
 
+    int record_count_by_device = 0;
+
     // Percorre registros, agrupando por dispositivo
-    for (int i = 1; i < count; i ++) {
+    for (int i = 1; i <= count; i ++) {
         Record r = records[i];
 
         // Novo dispositivo detectado
-        if (strcmp(current_device, r.device) != 0) {
+        if (i == count || strcmp(current_device, r.device) != 0) {
 
             // Calcula médias para o dispositivo anterior
-            float temp_media = temp_sum / count;
-            float hum_media = hum_sum / count;
-            float luz_media = luz_sum / count;
-            float ruido_media = ruido_sum / count;
-            float eco2_media = eco2_sum / count;
-            float etvoc_media = etvoc_sum / count;
+            float temp_media = temp_sum / record_count_by_device;
+            float hum_media = hum_sum / record_count_by_device;
+            float luz_media = luz_sum / record_count_by_device;
+            float ruido_media = ruido_sum / record_count_by_device;
+            float eco2_media = eco2_sum / record_count_by_device;
+            float etvoc_media = etvoc_sum / record_count_by_device;
 
             // Escreve resultados no arquivo (com mutex para evitar concorrência)
             pthread_mutex_lock(&write_mutex);
@@ -140,6 +142,8 @@ void process_record_chunk(Record *records, int count) {
             eco2_max = r.eco2;
             eco2_sum = 0.0;
 
+            record_count_by_device = 0;
+
         } else {
             temp_sum += r.temperature;
             if (r.temperature < temp_min) temp_min = r.temperature;
@@ -164,6 +168,8 @@ void process_record_chunk(Record *records, int count) {
             etvoc_sum += r.etvoc;
             if (r.etvoc < etvoc_min) etvoc_min = r.etvoc;
             if (r.etvoc > etvoc_max) etvoc_max = r.etvoc;
+
+            record_count_by_device++;
         }
     }
 }
